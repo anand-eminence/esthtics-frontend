@@ -1,0 +1,26 @@
+{
+  "name": "tec-admin-panel",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 4000",
+    "build": "next build",
+    "start": "sh -c 'next start -p ${PORT:-4000}'",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "axios": "^1.20.0",
+    "next": "^15.5.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-hook-form": "^7.87.0",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.12",
+    "@types/node": "^22.17.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "tailwindcss": "^4.1.12",
+    "typescript": "^5.9.0"
+  }
+}

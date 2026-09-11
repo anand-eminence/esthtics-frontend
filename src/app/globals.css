@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/*
+ * Palette read off the mockups in ../scope. Deliberately not the member quiz's
+ * warm paper-and-gold theme — the admin panel is its own cool, quiet surface.
+ */
+@theme {
+  --color-page: #f5f6f4;
+  --color-surface: #ffffff;
+  --color-line: #e6e7e4;
+
+  --color-ink: #1a1d21;
+  --color-ink-soft: #4a5158;
+  --color-muted: #8a9099;
+
+  --color-brand-50: #eef3f4;
+  --color-brand-100: #d7e4e7;
+  --color-brand-500: #3a5c69;
+  --color-brand-600: #2f4f5b;
+  --color-brand-700: #26414b;
+
+  --color-sidebar: #1c2126;
+  --color-sidebar-hover: #262d33;
+  --color-sidebar-active: #35525e;
+  --color-sidebar-ink: #c7cdd2;
+
+  --color-ok-bg: #dcf3e3;
+  --color-ok-ink: #1c6b38;
+  --color-warn-bg: #fbeecd;
+  --color-warn-ink: #8a6207;
+  --color-bad-bg: #fbe2de;
+  --color-bad-ink: #a8342a;
+  --color-chip-bg: #ebeafb;
+  --color-chip-ink: #4a45a3;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html,
+body {
+  background: var(--color-page);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Focus ring, applied once rather than per component. */
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}

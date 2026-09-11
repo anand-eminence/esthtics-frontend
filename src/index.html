@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TEC Daily Quiz — local preview (standalone)</title>
+    <style>
+      :root {
+        --ink: #1a1d21;
+        --muted: #8a9099;
+        --line: #e6e7e4;
+        --brand: #2f4f5b;
+      }
+      body {
+        margin: 0;
+        background: #f5f6f4;
+        color: var(--ink);
+        font:
+          14px/1.5 -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 24px 16px 48px;
+      }
+      h1 {
+        font-size: 17px;
+        margin: 0 0 4px;
+      }
+      p.lead {
+        margin: 0 0 18px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .panel {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 20px;
+      }
+      .grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      }
+      label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 5px;
+      }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 13px;
+        color: var(--ink);
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 14px;
+        flex-wrap: wrap;
+      }
+      button {
+        border: 0;
+        border-radius: 6px;
+        padding: 9px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        background: var(--brand);
+        color: #fff;
+      }
+      button.ghost {
+        background: #fff;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+      .hint {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 10px;
+      }
+      code {
+        background: #f5f6f4;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      iframe {
+        width: 100%;
+        height: 820px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+      }
+      #status {
+        font-size: 12px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>TEC Daily Quiz — local preview</h1>
+      <p class="lead">
+        Circle normally supplies the member. Locally there is no Circle, so pick
+        an identity here and the quiz is loaded exactly the way the embed loads
+        it. This copy can be opened straight from disk; the served copy lives at
+        <code>http://localhost:4000/quiz/preview.html</code> and is the more
+        reliable of the two, because browsers restrict storage on
+        <code>file://</code> pages.
+      </p>
+
+      <div class="panel">
+        <div class="grid">
+          <div>
+            <label for="uid">Member id (uid)</label>
+            <input id="uid" value="local-tester" />
+          </div>
+          <div>
+            <label for="name">Name</label>
+            <input id="name" value="Sarah Colby" />
+          </div>
+          <div>
+            <label for="email">Email</label>
+            <input id="email" value="sarah@example.com" />
+          </div>
+          <div>
+            <label for="apiBase">API base</label>
+            <input id="apiBase" value="http://localhost:4001" />
+          </div>
+          <div>
+            <label for="quizUrl">Quiz URL</label>
+            <input id="quizUrl" value="http://localhost:4000/quiz" />
+          </div>
+        </div>
+
+        <div class="row">
+          <button id="load">Load quiz</button>
+          <button class="ghost" id="newMember">New member</button>
+          <button class="ghost" id="check">Check API</button>
+          <span id="status"></span>
+        </div>
+
+        <p class="hint">
+          Answers are saved against the member id, so a reload resumes rather
+          than restarting. Use <strong>New member</strong> to get a fresh uid
+          and play the day from the top again. Questions come from the admin
+          panel — add some for today with status <code>Published</code> or
+          <code>Ready</code>, or the quiz will say there is nothing scheduled.
+        </p>
+      </div>
+
+      <iframe id="frame" title="TEC Daily Quiz"></iframe>
+    </div>
+
+    <script>
+      (function () {
+        var ids = ["uid", "name", "email", "apiBase", "quizUrl"];
+        var $ = function (id) {
+          return document.getElementById(id);
+        };
+        var status = $("status");
+
+        // Remember whatever was last used, so a reload keeps the same tester.
+        ids.forEach(function (id) {
+          try {
+            var saved = localStorage.getItem("tecPreview." + id);
+            if (saved) $(id).value = saved;
+          } catch (e) {}
+        });
+
+        function persist() {
+          ids.forEach(function (id) {
+            try {
+              localStorage.setItem("tecPreview." + id, $(id).value);
+            } catch (e) {}
+          });
+        }
+
+        function load() {
+          persist();
+          var params = new URLSearchParams({
+            uid: $("uid").value.trim(),
+            email: $("email").value.trim(),
+            name: $("name").value.trim(),
+            apiBase: $("apiBase").value.trim().replace(/\/$/, ""),
+            // Cache-buster so an edited script.js is picked up on reload.
+            t: String(Date.now()),
+          });
+          $("frame").src = $("quizUrl").value.trim() + "?" + params.toString();
+          status.textContent = "Loaded as " + $("uid").value.trim();
+        }
+
+        $("load").onclick = load;
+
+        $("newMember").onclick = function () {
+          $("uid").value = "local-" + Math.random().toString(36).slice(2, 8);
+          load();
+        };
+
+        $("check").onclick = function () {
+          var base = $("apiBase").value.trim().replace(/\/$/, "");
+          status.textContent = "Checking…";
+          fetch(base + "/api/health")
+            .then(function (r) {
+              return r.json();
+            })
+            .then(function (d) {
+              status.textContent = d.ok
+                ? "API up, database " + d.database
+                : "API responded but not ok";
+            })
+            .catch(function () {
+              status.textContent =
+                "Cannot reach " + base + " — is esthetics-backend running?";
+            });
+        };
+
+        load();
+      })();
+    </script>
+  </body>
+</html>
