@@ -1,5 +1,5 @@
 (function () {
-  var DEFAULT_LIVE_API_BASE_URL = "https://esti-backend.onrender.com";
+  var DEFAULT_LIVE_API_BASE_URL = "https://esthtics-backend.onrender.com";
 
   function resolveApiBaseUrl() {
     var qsApi = "";
