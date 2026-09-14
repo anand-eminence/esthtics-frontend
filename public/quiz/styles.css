@@ -455,41 +455,6 @@ html, body {
     font-size: 12px;
     color: var(--muted);
   }
-  #ed .ov {
-    position: fixed;
-    inset: 0;
-    background: rgba(20, 15, 10, 0.55);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 99999;
-    padding: 20px;
-  }
-  #ed .ov .card {
-    background: #fff;
-    border-radius: 18px;
-    max-width: 340px;
-    width: 100%;
-    padding: 18px;
-    text-align: center;
-  }
-  #ed .ov img {
-    width: 100%;
-    border-radius: 12px;
-    margin-bottom: 12px;
-  }
-  #ed .ov .btn {
-    margin-top: 8px;
-  }
-  #ed .ov .close {
-    margin-top: 10px;
-    background: transparent;
-    border: none;
-    color: var(--muted);
-    font-size: 13px;
-    cursor: pointer;
-    width: 100%;
-  }
   #ed .emailrow {
     display: flex;
     gap: 8px;
@@ -508,4 +473,129 @@ html, body {
     pointer-events: none;
     z-index: 99998;
     overflow: hidden;
+  }
+
+  /* Answer being saved — setAnswerPending() in script.js */
+  #ed .opts.saving .opt {
+    cursor: default;
+  }
+  #ed .opts.saving .opt:not(.picked) {
+    opacity: 0.5;
+  }
+  #ed .opt.picked {
+    position: relative;
+    overflow: hidden;
+    padding-right: 48px;
+    border-color: var(--gold);
+    background: var(--gold-soft);
+    color: var(--brown-d);
+  }
+  #ed .opt.picked::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      100deg,
+      transparent 25%,
+      rgba(255, 255, 255, 0.7) 50%,
+      transparent 75%
+    );
+    transform: translateX(-100%);
+    animation: ed-shimmer 1.3s ease-in-out infinite;
+    pointer-events: none;
+  }
+  #ed .opt.picked::after,
+  #ed .spin {
+    content: "";
+    border-radius: 50%;
+    border: 2.5px solid rgba(184, 131, 74, 0.22);
+    border-top-color: var(--gold-d);
+    animation: ed-spin 0.75s linear infinite;
+  }
+  #ed .opt.picked::after {
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    width: 18px;
+    height: 18px;
+    margin-top: -9px;
+  }
+  #ed .spin {
+    display: inline-block;
+    flex: none;
+    width: 16px;
+    height: 16px;
+  }
+  #ed .waiting {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 14px;
+    font-size: 14px;
+    color: var(--muted);
+    animation: edf 0.3s ease;
+  }
+  @keyframes ed-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes ed-shimmer {
+    to {
+      transform: translateX(100%);
+    }
+  }
+  /* Community comparison still loading — communityHtml() in script.js */
+  #ed .skel {
+    position: relative;
+    overflow: hidden;
+    background: var(--gold-soft);
+    border-radius: 10px;
+  }
+  #ed .skel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      100deg,
+      transparent 25%,
+      rgba(255, 255, 255, 0.7) 50%,
+      transparent 75%
+    );
+    transform: translateX(-100%);
+    animation: ed-shimmer 1.3s ease-in-out infinite;
+  }
+  #ed .skel-h {
+    width: 46%;
+    height: 16px;
+    margin-bottom: 14px;
+  }
+  #ed .skel-row {
+    height: 14px;
+    margin: 12px 0;
+  }
+  #ed .skel-row + .skel-row {
+    width: 78%;
+  }
+  #ed .skel-card {
+    height: 76px;
+    margin: 14px 0 4px;
+    border-radius: 14px;
+  }
+  #ed .screen.still {
+    animation: none;
+  }
+  #ed .arrive {
+    animation: edf 0.3s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #ed .opt.picked::before,
+    #ed .skel::before {
+      display: none;
+    }
+    #ed .opt.picked::after,
+    #ed .spin {
+      animation-duration: 2s;
+    }
   }

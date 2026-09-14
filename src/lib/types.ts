@@ -1,10 +1,21 @@
-/** Mirrors the JSON shapes returned by esthetics-backend. */
 
-/** The panel has one role — everyone who can sign in has full access. */
 export type AdminRole = "ADMINISTRATOR";
 export type AdminStatus = "INVITED" | "ACTIVE" | "DISABLED";
-export type QuestionStatus = "DRAFT" | "READY" | "PUBLISHED" | "ARCHIVED";
 export type FeaturedStatus = "DRAFT" | "READY" | "LIVE";
+
+export type DayState = "empty" | "in_progress" | "ready" | "live";
+
+export type DayInfo = {
+  quizDate: string;
+  state: DayState;
+  live: boolean;
+  publishedAt: string | null;
+  isPast: boolean;
+  coreSlots: Array<{ slot: number; questionId: string }>;
+  missingSlots: number[];
+  bonusQuestionId: string | null;
+  answerCount: number;
+};
 
 export type AdminUser = {
   id: string;
@@ -29,7 +40,7 @@ export type QuestionRow = {
   isBonus: boolean;
   theme: { id: string; key: string; label: string };
   prompt: string;
-  status: QuestionStatus;
+  dayLive: boolean;
   hasDeepDive: boolean;
   updatedAt: string;
 };
@@ -47,6 +58,7 @@ export type QuestionDetail = QuestionRow & {
   sourceUrl: string;
   goDeeperUrl: string;
   internalNotes: string;
+  answerCount: number;
 };
 
 export type Featured = {
@@ -64,6 +76,10 @@ export type Featured = {
 export type Dashboard = {
   date: string;
   timezone: string;
+  today: {
+    state: DayState;
+    missingSlots: number[];
+  };
   stats: {
     playedToday: number;
     totalMembers: number;
@@ -80,21 +96,18 @@ export type Dashboard = {
     prompt: string;
     answered: number;
     correctPct: number;
-    status: QuestionStatus;
   }>;
   needsAttention: Array<{
     date: string;
-    severity: "empty" | "incomplete";
+    state: Exclude<DayState, "live">;
     filled: number;
-    required: number;
     missingSlots: number[];
-    hasDraft: boolean;
   }>;
   scheduledAhead: Array<{
     date: string;
     questionCount: number;
     hasBonus: boolean;
-    isComplete: boolean;
+    state: DayState;
   }>;
 };
 
@@ -102,7 +115,6 @@ export type ScheduleWeek = {
   weekStart: string;
   weekEnd: string;
   timezone: string;
-  questionsPerDay: number;
   week: Array<{
     date: string;
     slots: Array<{
@@ -110,15 +122,16 @@ export type ScheduleWeek = {
       state: "filled" | "empty";
       questionId: string | null;
       themeLabel: string | null;
-      status: QuestionStatus | null;
     }>;
     bonus: {
       questionId: string;
       themeLabel: string;
-      status: QuestionStatus;
     } | null;
     filledCount: number;
     isComplete: boolean;
+    state: DayState;
+    hasAnswers: boolean;
+    isPast: boolean;
   }>;
   featured: Featured[];
 };
@@ -188,7 +201,6 @@ export type Statistics = {
 export type Settings = {
   id: string;
   timezone: string;
-  questionsPerDay: number;
   bonusEnabled: boolean;
   joinUrl: string;
   defaultGoDeeperUrl: string;

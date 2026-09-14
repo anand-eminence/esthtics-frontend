@@ -121,7 +121,8 @@ export function FeaturedManager({ items }: { items: Featured[] }) {
                     <Th>Date</Th>
                     <Th>Title</Th>
                     <Th>Link</Th>
-                    <Th>Shown after</Th> <Th>Status</Th>
+                    <Th>Shown after</Th>
+                    <Th>Status</Th>
                     <Th align="right"> </Th>
                   </tr>
                 </thead>
@@ -257,7 +258,7 @@ export function FeaturedManager({ items }: { items: Featured[] }) {
               <Select id="f-status" {...register("status")}>
                 <option value="DRAFT">Draft</option>
                 <option value="READY">Ready</option>
-                <option value="LIV  E">Live</option>
+                <option value="LIVE">Live</option>
               </Select>
             </Field>
 

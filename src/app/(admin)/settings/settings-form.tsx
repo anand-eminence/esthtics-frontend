@@ -10,7 +10,7 @@ import { apiSend, toApiError } from "@/lib/client";
 import { EmbedCode } from "./embed-code";
 import type { AdminUser, Settings } from "@/lib/types";
 
-// A working set for the community. The API accepts any IANA name.
+
 const TIMEZONES = [
   "America/New_York",
   "America/Chicago",
@@ -126,20 +126,6 @@ export function SettingsForm({
                     </option>
                   ))}
                 </Select>
-              </Field>
-
-              <Field
-                label="Questions per day"
-                htmlFor="questionsPerDay"
-                error={errors.questionsPerDay?.message}
-              >
-                <Input
-                  id="questionsPerDay"
-                  type="number"
-                  min={1}
-                  max={10}
-                  {...register("questionsPerDay", { valueAsNumber: true })}
-                />
               </Field>
             </div>
 

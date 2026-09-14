@@ -2,7 +2,17 @@ import Link from "next/link";
 import { ApiErrorState } from "@/components/api-error";
 import { PageHeader } from "@/components/page-header";
 import { QuestionFilters } from "./filters";
-import { Card, EmptyState, Notice, StatusBadge, Table, Td, Th, ThemeChip } from "@/components/ui";
+import {
+  Badge,
+  Card,
+  EmptyState,
+  Notice,
+  StatusBadge,
+  Table,
+  Td,
+  Th,
+  ThemeChip,
+} from "@/components/ui";
 import { apiGet, queryString } from "@/lib/api";
 import { shortDate, slotLabel, truncate } from "@/lib/format";
 import type { QuestionRow, Theme } from "@/lib/types";
@@ -11,8 +21,16 @@ type Search = { [key: string]: string | string[] | undefined };
 
 const one = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
+/** Set by the question form after a successful save. */
+const SAVED: Record<string, string> = {
+  added: "Question added.",
+  updated: "Changes saved.",
+  published: "Saved, and the day is now live.",
+};
+
 // A3 · Question bank. Replaces the Question Bank sheet — same content,
-// filterable, with the status column doing the same job it does today.
+// filterable. Whether members see a question is decided by its day rather than
+// the question itself, so the Day column shows whether that day is live.
 export default async function QuestionsPage({
   searchParams,
 }: {
@@ -23,7 +41,7 @@ export default async function QuestionsPage({
     search: one(params.search) ?? "",
     date: one(params.date) ?? "",
     themeId: one(params.themeId) ?? "",
-    status: one(params.status) ?? "",
+    day: one(params.day) ?? "",
     slot: one(params.slot) ?? "",
     page: Number(one(params.page)) || 1,
   };
@@ -60,6 +78,10 @@ export default async function QuestionsPage({
 
   const { questions, page, totalPages, total } = list.data;
 
+  // Filtering and paging build their own query without `saved`, so the
+  // confirmation goes away on the next change.
+  const saved = SAVED[one(params.saved) ?? ""] ?? null;
+
   return (
     <>
       <PageHeader
@@ -69,6 +91,8 @@ export default async function QuestionsPage({
       />
 
       <div className="space-y-5 p-8">
+        {saved ? <Notice>{saved}</Notice> : null}
+
         <QuestionFilters themes={themeList.ok ? themeList.data.themes : []} current={filters} />
 
         <Card padded={false} className="px-5 pt-4 pb-1">
@@ -87,7 +111,7 @@ export default async function QuestionsPage({
                   <Th>Slot</Th>
                   <Th>Theme</Th>
                   <Th>Question</Th>
-                  <Th>Status</Th>
+                  <Th>Day</Th>
                   <Th>Deep dive</Th>
                   <Th align="right"> </Th>
                 </tr>
@@ -108,7 +132,11 @@ export default async function QuestionsPage({
                     </Td>
                     <Td className="text-ink">{truncate(q.prompt, 64)}</Td>
                     <Td>
-                      <StatusBadge status={q.status} />
+                      {q.dayLive ? (
+                        <Badge tone="ok">Live</Badge>
+                      ) : (
+                        <Badge tone="neutral">Not live</Badge>
+                      )}
                     </Td>
                     <Td>{q.hasDeepDive ? "Yes" : "No"}</Td>
                     <Td align="right">
@@ -150,8 +178,8 @@ export default async function QuestionsPage({
         ) : null}
 
         <Notice>
-          Only rows set to Ready or Published are served to members. Draft rows are invisible to the
-          quiz, exactly as they are in the sheet today.
+          Members see a day only once its three questions are saved and the day is published.
+          Publish with the last question you add, or from the Schedule.
         </Notice>
       </div>
     </>

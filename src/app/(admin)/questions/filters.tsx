@@ -9,9 +9,11 @@ type Current = {
   search: string;
   date: string;
   themeId: string;
-  status: string;
+  day: string;
   slot: string;
 };
+
+const KEYS = ["search", "date", "themeId", "day", "slot"] as const;
 
 export function QuestionFilters({
   themes,
@@ -26,10 +28,11 @@ export function QuestionFilters({
   function apply(patch: Partial<Current>) {
     const next = { ...current, ...patch };
     const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(next)) {
-      if (value) params.set(key, value);
+    // Only the filter keys. The page hands in its whole filter object, which
+    // also carries `page`, and any filter change should start again at page 1.
+    for (const key of KEYS) {
+      if (next[key]) params.set(key, next[key]);
     }
-    // Any filter change resets to the first page.
     router.push(`/questions${params.toString() ? `?${params}` : ""}`);
   }
 
@@ -74,16 +77,14 @@ export function QuestionFilters({
       </Select>
 
       <Select
-        aria-label="Status"
+        aria-label="Day"
         className="w-[150px]"
-        value={current.status}
-        onChange={(e) => apply({ status: e.target.value })}
+        value={current.day}
+        onChange={(e) => apply({ day: e.target.value })}
       >
-        <option value="">Status · All</option>
-        <option value="DRAFT">Draft</option>
-        <option value="READY">Ready</option>
-        <option value="PUBLISHED">Published</option>
-        <option value="ARCHIVED">Archived</option>
+        <option value="">Day · All</option>
+        <option value="live">Live</option>
+        <option value="not_live">Not live</option>
       </Select>
 
       <Select

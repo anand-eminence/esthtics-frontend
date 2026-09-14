@@ -3,11 +3,6 @@
 import axios, { AxiosError } from "axios";
 import { API_BASE_URL } from "./config";
 
-/**
- * Browser-side axios instance. It talks to the admin API directly, and
- * `withCredentials` sends the httpOnly session cookie the API set at login —
- * the token itself is never readable from JavaScript.
- */
 export const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
@@ -43,7 +38,18 @@ export function toApiError(err: unknown): ApiError {
       fieldErrors: body?.fieldErrors || body?.details?.fieldErrors,
     };
   }
+
+  if (isApiError(err)) return err;
   return { message: "Something went wrong", status: 0 };
+}
+
+function isApiError(value: unknown): value is ApiError {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as ApiError).message === "string" &&
+    typeof (value as ApiError).status === "number"
+  );
 }
 
 // Every rejection leaves the instance already normalised.

@@ -106,7 +106,7 @@
       if (urlUid || urlEmail) {
         return {
           uid: urlUid || urlEmail,
-          name: (urlName || "there").split(" ")[0],
+          name: urlName.split(" ")[0],
           fullName: urlName,
           email: urlEmail,
           demo: false,
@@ -124,7 +124,7 @@
             u.name || [u.firstName, u.lastName].filter(Boolean).join(" ");
           return {
             uid: uid,
-            name: u.firstName || (full || "there").split(" ")[0],
+            name: u.firstName || full.split(" ")[0],
             fullName: full,
             email: u.email || "",
             demo: false,
@@ -134,9 +134,12 @@
       }
     } catch (e) {}
 
+    // No member details at all — local testing. Plays as the "test-user"
+    // member, whose name lives in the database. The name stays empty here so a
+    // placeholder is never sent to be saved; firstName() shows one.
     return {
-      uid: "demo-user",
-      name: "there",
+      uid: "test-user",
+      name: "",
       fullName: "",
       email: "",
       demo: true,
@@ -276,8 +279,15 @@
     });
   }
 
+  // Shown when there are no member details, e.g. testing locally. Display only —
+  // never sent to the API, so it can't end up saved as a member's name.
+  var TEST_NAME = "Test User";
+
   function firstName() {
-    return String(me.name || "there").split(" ")[0];
+    // The test member's stored name is this same placeholder; show it whole
+    // rather than cutting it down to "Test".
+    if (me.name === TEST_NAME) return TEST_NAME;
+    return String(me.name || "").split(" ")[0] || TEST_NAME;
   }
 
   function greeting() {
@@ -521,26 +531,38 @@
     );
   }
 
-  function setOptionsDisabled(disabled) {
+  // Saving an answer waits on the server, which can take a couple of seconds.
+  // Meanwhile the tapped option holds a gold "checking" state with a spinner,
+  // the others step back, and nothing can be tapped twice.
+  function setAnswerPending(idx, pending) {
+    var opts = document.getElementById("ed-opts");
+    if (!opts) return;
+    opts.classList.toggle("saving", pending);
+    opts.setAttribute("aria-busy", pending ? "true" : "false");
     Array.prototype.forEach.call(
-      document.querySelectorAll("#ed-opts .opt"),
-      function (btn) {
-        btn.disabled = disabled;
+      opts.querySelectorAll(".opt"),
+      function (btn, i) {
+        btn.disabled = pending;
+        btn.classList.toggle("picked", pending && i === idx);
       },
     );
+    // Clears an earlier "could not save" message when she tries again.
+    var box = document.getElementById("ed-reveal");
+    if (box) box.innerHTML = "";
   }
 
   // Each answer is submitted the moment it is tapped (Q4/Q5).
   function choose(idx) {
     var c = currentCard();
-    setOptionsDisabled(true);
+    setAnswerPending(idx, true);
 
     saveAnswer(c.id, idx)
       .then(function (res) {
+        setAnswerPending(idx, false);
         revealAnswer(c, idx, res);
       })
       .catch(function (err) {
-        setOptionsDisabled(false);
+        setAnswerPending(idx, false);
         renderInlineError(err.message || String(err));
       });
   }
@@ -627,26 +649,17 @@
   }
 
   function revealButtonsHtml(c) {
-    var buttons =
-      '<button class="mini" id="ed-share-answer">Share this answer</button>';
     // Go deeper only appears when that question actually has something behind it.
     if (c.deepdive && c.deepdive.text) {
-      buttons +=
-        '<button class="mini deep" id="ed-go-deeper">Go deeper</button>';
-    } else if (c.goDeeperUrl) {
-      buttons +=
-        '<button class="mini deep" id="ed-go-deeper-link">Go deeper</button>';
+      return '<div class="row"><button class="mini deep" id="ed-go-deeper">Go deeper</button></div>';
     }
-    return '<div class="row">' + buttons + "</div>";
+    if (c.goDeeperUrl) {
+      return '<div class="row"><button class="mini deep" id="ed-go-deeper-link">Go deeper</button></div>';
+    }
+    return "";
   }
 
   function wireRevealButtons(c) {
-    var shareBtn = document.getElementById("ed-share-answer");
-    if (shareBtn) {
-      shareBtn.onclick = function () {
-        shareAnswer(c);
-      };
-    }
     var deepBtn = document.getElementById("ed-go-deeper");
     if (deepBtn) {
       deepBtn.onclick = function () {
@@ -823,125 +836,6 @@
     } catch (e) {}
   }
 
-  // ---------- SHARE (canvas-drawn images) ----------
-  function drawAnswerCard(c) {
-    var canvas = document.createElement("canvas");
-    canvas.width = 1080;
-    canvas.height = 1080;
-    var ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#fbfcf6";
-    ctx.fillRect(0, 0, 1080, 1080);
-    ctx.fillStyle = "#8C5B3A";
-    ctx.fillRect(0, 0, 1080, 140);
-    ctx.fillStyle = "#fff";
-    ctx.font = "700 40px -apple-system,Arial";
-    ctx.textAlign = "left";
-    ctx.fillText("THE ESTI CONFIDENTIAL", 50, 88);
-    ctx.fillStyle = "#E0AC69";
-    ctx.font = "700 28px -apple-system,Arial";
-    ctx.fillText((c.themeLabel || "").toUpperCase(), 50, 210);
-    ctx.fillStyle = "#2a231c";
-    ctx.font = "650 46px -apple-system,Arial";
-    wrapText(ctx, c.q, 50, 300, 980, 58);
-    ctx.fillStyle = "#714628";
-    ctx.font = "400 34px -apple-system,Arial";
-    wrapText(ctx, c.aha, 50, 560, 980, 46);
-    ctx.fillStyle = "#8b7b6b";
-    ctx.font = "400 28px -apple-system,Arial";
-    ctx.fillText("via The Esti Confidential", 50, 1020);
-    return canvas;
-  }
-
-  function drawResultCard(results, score, max, streak) {
-    // Kept for reference / possible future use — the button that used to trigger this
-    // ("Share today's result") was repurposed into the "Click to Learn More" nav link
-    // per the current end-screen design. Not currently wired to any button.
-    var canvas = document.createElement("canvas");
-    canvas.width = 1080;
-    canvas.height = 1080;
-    var ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#fbfcf6";
-    ctx.fillRect(0, 0, 1080, 1080);
-    ctx.fillStyle = "#8C5B3A";
-    ctx.fillRect(90, 90, 900, 900);
-    ctx.fillStyle = "#fff";
-    ctx.font = "700 36px -apple-system,Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("THE ESTI CONFIDENTIAL CHALLENGE", 540, 220);
-    ctx.font = "850 160px -apple-system,Arial";
-    ctx.fillText(score + " / " + max, 540, 460);
-    var dotSpacing = 70,
-      startX = 540 - ((results.length - 1) * dotSpacing) / 2;
-    results.forEach(function (r, i) {
-      ctx.beginPath();
-      ctx.fillStyle = r.correct ? "#196B24" : "#E97132";
-      ctx.arc(startX + i * dotSpacing, 560, 22, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    ctx.font = "600 32px -apple-system,Arial";
-    ctx.fillText(streak + "-day streak", 540, 700);
-    return canvas;
-  }
-
-  function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-    var words = text.split(" ");
-    var line = "";
-    var yy = y;
-    for (var n = 0; n < words.length; n++) {
-      var test = line + words[n] + " ";
-      if (ctx.measureText(test).width > maxWidth && n > 0) {
-        ctx.fillText(line, x, yy);
-        line = words[n] + " ";
-        yy += lineHeight;
-      } else line = test;
-    }
-    ctx.fillText(line, x, yy);
-  }
-
-  function shareAnswer(c) {
-    var canvas = drawAnswerCard(c);
-    var caption =
-      "Here’s a fun esti tip for the day. " +
-      c.q +
-      " " +
-      c.aha +
-      " Sent to you via the Daily Quiz at The Esti Confidential (www.esticonfidential.com).";
-    canvas.toBlob(function (blob) {
-      var file = new File([blob], "tec-tip.png", { type: "image/png" });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({ files: [file], text: caption }).catch(function () {
-          showShareOverlay(canvas, caption);
-        });
-      } else {
-        showShareOverlay(canvas, caption);
-      }
-    });
-  }
-
-  function showShareOverlay(canvas, caption) {
-    var ov = document.createElement("div");
-    ov.className = "ov";
-    var dataUrl = canvas.toDataURL("image/png");
-    ov.innerHTML =
-      '<div class="card">' +
-      '<img src="' +
-      dataUrl +
-      '">' +
-      '<button class="btn" id="ed-download">Download image</button>' +
-      '<button class="close" id="ed-ov-close">Close</button>' +
-      "</div>";
-    document.body.appendChild(ov);
-    document.getElementById("ed-download").onclick = function () {
-      var a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = "tec-tip.png";
-      a.click();
-    };
-    document.getElementById("ed-ov-close").onclick = function () {
-      ov.remove();
-    };
-  }
-
   // ---------- END SCREEN ----------
   function communityRows(byTheme) {
     if (!byTheme || !byTheme.length) return "";
@@ -950,11 +844,11 @@
         return (
           '<div class="otherrow"><span>' +
           esc(t.label) +
-          '</span><span class="pct">' +
+          '</span><span class="pct">You ' +
           t.you +
-          " / " +
+          "% · Community " +
           t.community +
-          "</span></div>"
+          "%</span></div>"
         );
       })
       .join("");
@@ -974,18 +868,56 @@
     );
   }
 
-  function renderEnd() {
+  // The community comparison is a second request: fetched once, shown as a
+  // shimmer while it is on its way, and left out quietly if it can't be loaded.
+  var RESULTS_UNAVAILABLE = false;
+  var resultsInFlight = false;
+
+  function communityHtml() {
+    if (!RESULTS) {
+      if (RESULTS_UNAVAILABLE) return "";
+      return (
+        '<div id="ed-community-loading" aria-busy="true">' +
+        '<div class="otherwrap"><div class="skel skel-h"></div>' +
+        '<div class="skel skel-row"></div><div class="skel skel-row"></div></div>' +
+        '<div class="skel skel-card"></div>' +
+        "</div>"
+      );
+    }
+    var community = RESULTS.community || null;
+    var byTheme = RESULTS.byTheme || [];
+    return (
+      (byTheme.length
+        ? '<div class="otherwrap"><div class="h">You vs the community</div>' +
+          communityRows(byTheme) +
+          "</div>"
+        : "") +
+      (community
+        ? '<div class="msgcard"><div class="lbl">Today across the community</div>' +
+          community.aced +
+          " of " +
+          community.played +
+          " estis aced it.</div>"
+        : "")
+    );
+  }
+
+  function renderEnd(refresh) {
+    // Also wired straight to onclick, which passes an event — only an explicit
+    // true means "the community numbers just landed".
+    var refreshing = refresh === true;
     var score = state.results.filter(function (r) {
       return r.correct;
     }).length;
     var max = state.results.length;
 
-    var community = RESULTS && RESULTS.community ? RESULTS.community : null;
-    var byTheme = RESULTS ? RESULTS.byTheme : [];
-
     el.innerHTML =
       chrome(state.streak, 100) +
-      '<div class="screen">' +
+      // A refresh only fills in the community section, so the screen itself
+      // doesn't replay its entrance; just the new part fades in.
+      '<div class="screen' +
+      (refreshing ? " still" : "") +
+      '">' +
       '<div class="kick">Today’s results</div>' +
       '<div class="score">' +
       score +
@@ -1002,19 +934,11 @@
       '<div class="t">The Esti Confidential Challenge</div>' +
       dotsHtml(state.results) +
       "</div>" +
-      (byTheme && byTheme.length
-        ? '<div class="otherwrap"><div class="h">You vs the community</div>' +
-          communityRows(byTheme) +
-          "</div>"
-        : "") +
-      (community
-        ? '<div class="msgcard"><div class="lbl">Today across the community</div>' +
-          community.aced +
-          " of " +
-          community.played +
-          " estis aced it.</div>"
-        : "") +
-      '<button class="btn" id="ed-share-streak">Share my streak</button>' +
+      "<div" +
+      (refreshing ? ' class="arrive"' : "") +
+      ">" +
+      communityHtml() +
+      "</div>" +
       '<button class="ghost" id="ed-stats">My total stats</button>' +
       (JOIN_URL
         ? '<div class="join"><div class="h">Know an esti who’d love this?</div>' +
@@ -1023,13 +947,6 @@
         : "") +
       "</div>";
 
-    document.getElementById("ed-share-streak").onclick = function () {
-      var canvas = drawResultCard(state.results, score, max, state.streak);
-      showShareOverlay(
-        canvas,
-        "My Esti Confidential streak: " + state.streak + " days.",
-      );
-    };
     document.getElementById("ed-stats").onclick = renderStats;
 
     var refer = document.getElementById("ed-refer");
@@ -1039,20 +956,27 @@
       };
     }
 
-    // Community numbers are a second call, so the screen paints immediately
-    // and fills in when they land.
-    if (!RESULTS) {
+    if (!RESULTS && !RESULTS_UNAVAILABLE && !resultsInFlight) {
+      resultsInFlight = true;
       fetchResults()
         .then(function (data) {
           if (data && data.results) {
             RESULTS = data.results;
             if (typeof RESULTS.streak === "number")
               state.streak = RESULTS.streak;
-            renderEnd();
+          } else {
+            RESULTS_UNAVAILABLE = true;
           }
         })
         .catch(function () {
-          /* the score still stands without the comparison */
+          // The score still stands without the comparison.
+          RESULTS_UNAVAILABLE = true;
+        })
+        .then(function () {
+          resultsInFlight = false;
+          // Only repaint if she is still on this screen — never pull her back
+          // from the stats page.
+          if (document.getElementById("ed-community-loading")) renderEnd(true);
         });
     }
   }
@@ -1061,7 +985,9 @@
   function renderStats() {
     el.innerHTML =
       chrome(state.streak, 100) +
-      '<div class="screen"><div class="kick">My total stats</div><h1>Loading…</h1></div>';
+      '<div class="screen"><div class="kick">My total stats</div><h1>Loading…</h1>' +
+      waitingHtml("Adding up your answers") +
+      "</div>";
 
     fetchHistory()
       .then(function (data) {
@@ -1126,10 +1052,20 @@
       });
   }
 
+  function waitingHtml(label) {
+    return (
+      '<div class="waiting" role="status"><span class="spin"></span>' +
+      esc(label) +
+      "</div>"
+    );
+  }
+
   function renderLoading() {
     el.innerHTML =
       chrome(state.streak, 0) +
-      '<div class="screen"><div class="kick">Loading</div><h1>Fetching today’s questions…</h1></div>';
+      '<div class="screen"><div class="kick">Loading</div><h1>Fetching today’s questions…</h1>' +
+      waitingHtml("This only takes a moment") +
+      "</div>";
   }
 
   function renderApiError(msg) {

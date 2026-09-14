@@ -3,7 +3,7 @@ import { ApiErrorState } from "@/components/api-error";
 import { PageHeader } from "@/components/page-header";
 import { QuestionForm } from "../question-form";
 import { apiGet } from "@/lib/api";
-import type { QuestionDetail, Theme } from "@/lib/types";
+import type { DayInfo, QuestionDetail, Theme } from "@/lib/types";
 
 // A4 · Edit question.
 export default async function EditQuestionPage({
@@ -14,7 +14,7 @@ export default async function EditQuestionPage({
   const { id } = await params;
 
   const [question, themes] = await Promise.all([
-    apiGet<{ question: QuestionDetail }>(`/api/admin/questions/${id}`),
+    apiGet<{ question: QuestionDetail; day: DayInfo }>(`/api/admin/questions/${id}`),
     apiGet<{ themes: Theme[] }>("/api/admin/themes"),
   ]);
 
@@ -34,6 +34,7 @@ export default async function EditQuestionPage({
     <QuestionForm
       question={question.data.question}
       themes={themes.ok ? themes.data.themes : []}
+      initialDay={question.data.day}
     />
   );
 }
