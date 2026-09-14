@@ -204,6 +204,5 @@ export type Settings = {
   bonusEnabled: boolean;
   joinUrl: string;
   defaultGoDeeperUrl: string;
-  referralUrl: string;
   quizEmbedUrl: string;
 };

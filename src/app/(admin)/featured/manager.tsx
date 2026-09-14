@@ -239,13 +239,15 @@ export function FeaturedManager({ items }: { items: Featured[] }) {
             </Field>
 
             <Field
-              label="Image"
+              label="Image link"
               htmlFor="f-image"
               error={errors.imageUrl?.message}
+              hint="Optional. A direct link to a JPG or PNG, shown above the title."
             >
               <Input
                 id="f-image"
-                placeholder="Optional"
+                inputMode="url"
+                placeholder="https://…"
                 {...register("imageUrl")}
               />
             </Field>

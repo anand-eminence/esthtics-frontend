@@ -51,7 +51,6 @@
     APPS_SCRIPT_URL: "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE",
     PUBLIC_QUIZ_URL: "https://tec-daily-three.netlify.app",
     JOIN_URL: "https://www.esticonfidential.com",
-    REFERRAL_URL: "PASTE_YOUR_CIRCLE_REFERRAL_LINK_HERE",
     DEEP_DIVE_URL: "https://www.esticonfidential.com",
   };
 
@@ -732,6 +731,11 @@
       chrome(state.streak, 100) +
       '<div class="screen">' +
       '<div class="kick">Featured</div>' +
+      (FEATURED.imageUrl
+        ? '<img class="feat-img" id="ed-featured-img" alt="" src="' +
+          esc(FEATURED.imageUrl) +
+          '">'
+        : "") +
       "<h1>" +
       esc(FEATURED.title) +
       "</h1>" +
@@ -746,6 +750,14 @@
       '<button class="ghost" id="ed-featured-skip">Skip</button>' +
       '<div class="acedLine">This screen does not affect your score or your streak.</div>' +
       "</div>";
+
+    // A broken or mistyped image link shouldn't leave an empty box on screen.
+    var img = document.getElementById("ed-featured-img");
+    if (img) {
+      img.onerror = function () {
+        img.remove();
+      };
+    }
 
     var cta = document.getElementById("ed-featured-cta");
     if (cta) {

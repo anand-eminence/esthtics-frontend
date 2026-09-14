@@ -34,8 +34,6 @@ export function SettingsForm({
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const [inviting, setInviting] = useState(false);
-  const [inviteMessage, setInviteMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -44,10 +42,6 @@ export function SettingsForm({
     setError,
     formState: { errors, isSubmitting },
   } = useForm<Settings>({ defaultValues: settings });
-
-  const invites = useForm<{ name: string; email: string }>({
-    defaultValues: { name: "", email: "" },
-  });
 
   const timezone = watch("timezone");
 
@@ -69,25 +63,6 @@ export function SettingsForm({
         setError(name as keyof Settings, { type: "server", message: msg });
       }
       setMessage(apiError.message);
-    }
-  }
-
-  async function sendInvite(values: { name: string; email: string }) {
-    setInviteMessage(null);
-    try {
-      await apiSend("/api/admin/users", "POST", values);
-      invites.reset({ name: "", email: "" });
-      setInviting(false);
-      router.refresh();
-    } catch (err) {
-      const apiError = toApiError(err);
-      for (const [name, msg] of Object.entries(apiError.fieldErrors ?? {})) {
-        invites.setError(name as "name" | "email", {
-          type: "server",
-          message: msg,
-        });
-      }
-      setInviteMessage(apiError.message);
     }
   }
 
@@ -168,18 +143,6 @@ export function SettingsForm({
               </Field>
 
               <Field
-                label="Referral link · from Circle affiliates"
-                htmlFor="referralUrl"
-                error={errors.referralUrl?.message}
-              >
-                <Input
-                  id="referralUrl"
-                  placeholder="Paste once configured in Circle"
-                  {...register("referralUrl")}
-                />
-              </Field>
-
-              <Field
                 label="Quiz embed URL"
                 htmlFor="quizEmbedUrl"
                 error={errors.quizEmbedUrl?.message}
@@ -225,69 +188,6 @@ export function SettingsForm({
                 ))}
               </tbody>
             </Table>
-          )}
-
-          {inviting ? (
-            <div className="mt-4 space-y-3 rounded-md border border-line bg-page p-4">
-              <Field
-                label="Name"
-                htmlFor="inviteName"
-                error={invites.formState.errors.name?.message}
-              >
-                <Input
-                  id="inviteName"
-                  invalid={Boolean(invites.formState.errors.name)}
-                  {...invites.register("name", { required: "Enter a name" })}
-                />
-              </Field>
-              <Field
-                label="Email"
-                htmlFor="inviteEmail"
-                error={invites.formState.errors.email?.message}
-              >
-                <Input
-                  id="inviteEmail"
-                  type="email"
-                  invalid={Boolean(invites.formState.errors.email)}
-                  {...invites.register("email", {
-                    required: "Enter an email address",
-                  })}
-                />
-              </Field>
-              {inviteMessage ? (
-                <Notice tone="error">{inviteMessage}</Notice>
-              ) : null}
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  onClick={invites.handleSubmit(sendInvite)}
-                  disabled={invites.formState.isSubmitting}
-                >
-                  Send invite
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setInviting(false)}
-                >
-                  Cancel
-                </Button>
-              </div>
-              <p className="text-[12px] text-muted">
-                Invite emails are not wired up yet, so the account is created
-                without a password. An administrator has to set one before they
-                can sign in.
-              </p>
-            </div>
-          ) : (
-            <Button
-              type="button"
-              variant="secondary"
-              className="mt-4"
-              onClick={() => setInviting(true)}
-            >
-              Invite user
-            </Button>
           )}
 
           <p className="mt-5 text-[12.5px] text-muted">
