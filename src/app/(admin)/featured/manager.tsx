@@ -95,14 +95,7 @@ export function FeaturedManager({ items }: { items: Featured[] }) {
 
   return (
     <>
-      <PageHeader
-        title="Featured content"
-        action={
-          <Button type="button" onClick={startNew}>
-            Add featured screen
-          </Button>
-        }
-      />
+      <PageHeader title="Featured content" />
 
       <div className="grid gap-6 p-8 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="space-y-5">
