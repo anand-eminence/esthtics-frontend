@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm, type UseFormSetError } from "react-hook-form";
+import { useConfirm } from "@/components/confirm";
 import { DayBadge } from "@/components/day-badge";
 import { Button, Field, Input, Select, Textarea } from "@/components/form";
 import { Notice, cn } from "@/components/ui";
@@ -86,8 +87,23 @@ function applyServerErrors(
   setError: UseFormSetError<FormValues>,
 ) {
   for (const [name, message] of Object.entries(error.fieldErrors ?? {})) {
-    setError(name as keyof FormValues, { type: "server", message });
+    // in an object, so its input is "options.2.text".
+    const field = /^options\.\d+$/.test(name) ? `${name}.text` : name;
+    setError(field as keyof FormValues, { type: "server", message });
   }
+}
+
+const notBlank = (message: string) => (value: string) =>
+  value.trim() !== "" || message;
+
+function trimmed(values: FormValues): FormValues {
+  const out = { ...values };
+  for (const key of Object.keys(out) as (keyof FormValues)[]) {
+    const value = out[key];
+    if (typeof value === "string") (out[key] as string) = value.trim();
+  }
+  out.options = values.options.map((o) => ({ text: o.text.trim() }));
+  return out;
 }
 
 /** "slot 2", "slots 2 and 3", "slots 1, 2 and 3" */
@@ -101,13 +117,17 @@ export function QuestionForm({
   themes,
   defaultDate,
   initialDay,
+  today,
 }: {
   question: QuestionDetail | null;
   themes: Theme[];
   defaultDate?: string;
   initialDay?: DayInfo | null;
+  /** Today in the quiz's timezone — the earliest date that can be picked. */
+  today: string;
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [message, setMessage] = useState<string | null>(null);
   const [day, setDay] = useState<DayInfo | null>(initialDay ?? null);
 
@@ -186,18 +206,22 @@ export function QuestionForm({
       (!question || !question.isBonus || question.quizDate !== values.quizDate);
     if (
       bonusGoesLive &&
-      !confirm(
-        `${shortDate(values.quizDate)} is live. Saving shows this bonus question to members straight away.`,
-      )
+      !(await confirm({
+        title: `${shortDate(values.quizDate)} is live`,
+        message: "Saving shows this bonus question to members straight away.",
+        confirmLabel: "Save",
+        tone: "primary",
+      }))
     ) {
       return;
     }
 
+    const clean = trimmed(values);
     const payload = {
-      ...values,
-      quizDate: values.quizDate || question?.quizDate || "",
-      slot: values.isBonus ? 4 : Number(values.slot),
-      options: values.options.map((o) => o.text.trim()),
+      ...clean,
+      quizDate: clean.quizDate || question?.quizDate || "",
+      slot: clean.isBonus ? 4 : Number(clean.slot),
+      options: clean.options.map((o) => o.text),
       publishDay: publish,
     };
 
@@ -219,7 +243,12 @@ export function QuestionForm({
 
   async function onDelete() {
     if (!question) return;
-    if (!confirm("Delete this question? This can't be undone.")) return;
+    const ok = await confirm({
+      title: "Delete this question?",
+      message: "This can't be undone.",
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
     try {
       await apiSend(`/api/admin/questions/${question.id}`, "DELETE");
       router.push("/questions");
@@ -333,9 +362,18 @@ export function QuestionForm({
                 <Input
                   id="quizDate"
                   type="date"
+                  min={today}
                   disabled={placementLocked}
                   invalid={Boolean(errors.quizDate)}
-                  {...register("quizDate", { required: "Pick a date" })}
+                  {...register("quizDate", {
+                    required: "Pick a date",
+                    // A question already on a past day may keep its date, so
+                    // it can still be corrected; it just can't move to one.
+                    validate: (value) =>
+                      value >= today ||
+                      value === question?.quizDate ||
+                      "Pick today or a later date",
+                  })}
                 />
               </Field>
 
@@ -389,7 +427,9 @@ export function QuestionForm({
                 id="prompt"
                 rows={3}
                 invalid={Boolean(errors.prompt)}
-                {...register("prompt", { required: "Write the question" })}
+                {...register("prompt", {
+                  validate: notBlank("Write the question"),
+                })}
               />
             </Field>
 
@@ -429,7 +469,7 @@ export function QuestionForm({
                         className={selected ? "border-brand-500" : undefined}
                         invalid={Boolean(errors.options?.[index]?.text)}
                         {...register(`options.${index}.text` as const, {
-                          required: "Options cannot be blank",
+                          validate: notBlank("Options cannot be blank"),
                         })}
                       />
                       {fields.length > 2 && !answersLocked ? (

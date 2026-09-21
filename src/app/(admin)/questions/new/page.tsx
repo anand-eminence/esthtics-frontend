@@ -1,7 +1,7 @@
 import { ApiErrorState } from "@/components/api-error";
 import { PageHeader } from "@/components/page-header";
 import { QuestionForm } from "../question-form";
-import { apiGet } from "@/lib/api";
+import { apiGet, quizToday } from "@/lib/api";
 import type { DayInfo, Theme } from "@/lib/types";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -14,11 +14,12 @@ export default async function NewQuestionPage({
   const { date } = await searchParams;
   const quizDate = date && DATE.test(date) ? date : undefined;
 
-  const [themes, day] = await Promise.all([
+  const [themes, day, today] = await Promise.all([
     apiGet<{ themes: Theme[] }>("/api/admin/themes"),
     quizDate
       ? apiGet<{ day: DayInfo }>(`/api/admin/days/${quizDate}`)
       : Promise.resolve(null),
+    quizToday(),
   ]);
 
   if (!themes.ok) {
@@ -38,6 +39,7 @@ export default async function NewQuestionPage({
       themes={themes.data.themes}
       defaultDate={quizDate}
       initialDay={day?.ok ? day.data.day : null}
+      today={today}
     />
   );
 }

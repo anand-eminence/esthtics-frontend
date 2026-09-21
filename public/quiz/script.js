@@ -775,6 +775,11 @@
         (c.deepdive.sourceLabel || "Source") +
         "</button></div>"
       : "";
+    // The deep dive leads on to the question's Go deeper link (or the default
+    // one from Settings), which the reveal screen can't show alongside it.
+    var linkHtml = c.goDeeperUrl
+      ? '<div class="row"><button class="mini deep" id="ed-go-deeper-link">Go deeper</button></div>'
+      : "";
     el.innerHTML =
       chrome(state.streak, progress) +
       '<div class="screen">' +
@@ -786,7 +791,7 @@
       c.deepdive.text +
       "</div>" +
       sourceHtml +
-      revealButtonsHtml() +
+      linkHtml +
       '<button class="btn" id="ed-next">' +
       (state.i === QUEUE.length - 1 ? "See results" : "Next question") +
       "</button>" +
