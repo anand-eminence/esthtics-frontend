@@ -16,6 +16,11 @@ type Current = {
 const KEYS = ["search", "date", "themeId", "day", "slot"] as const;
 
 const SEARCH_DEBOUNCE_MS = 350;
+const DATE_DEBOUNCE_MS = 300;
+
+// The browser reports a year while it's still being typed ("0002", "0202"),
+// so only a complete, plausible date is used as a filter.
+const DATE_RE = /^(19|20)\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 
 export function QuestionFilters({
   themes,
@@ -71,7 +76,25 @@ export function QuestionFilters({
     }
   }, [current.search]);
 
-  const hasFilters = KEYS.some((key) => current[key]) || Boolean(search);
+  // The box shows what's being typed; the list only follows a complete date.
+  const [date, setDate] = useState(current.date);
+  const dateTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    setDate(current.date);
+  }, [current.date]);
+
+  useEffect(() => () => clearTimeout(dateTimer.current), []);
+
+  function onDate(value: string) {
+    setDate(value);
+    if (value !== "" && !DATE_RE.test(value)) return;
+    clearTimeout(dateTimer.current);
+    dateTimer.current = setTimeout(() => set({ date: value }), DATE_DEBOUNCE_MS);
+  }
+
+  const hasFilters =
+    KEYS.some((key) => current[key]) || Boolean(search) || Boolean(date);
 
   // Clears only the search, straight away, and keeps the other filters.
   function clearSearch() {
@@ -82,6 +105,8 @@ export function QuestionFilters({
   function clearAll() {
     pushed.current = "";
     setSearch("");
+    clearTimeout(dateTimer.current);
+    setDate("");
     startTransition(() => router.replace("/questions", { scroll: false }));
   }
 
@@ -121,11 +146,11 @@ export function QuestionFilters({
       </div>
 
       <Input
-        type="month"
-        aria-label="Month"
+        type="date"
+        aria-label="Date"
         className="w-[160px]"
-        value={current.date.slice(0, 7)}
-        onChange={(e) => set({ date: e.target.value })}
+        value={date}
+        onChange={(e) => onDate(e.target.value)}
       />
 
       <Select
