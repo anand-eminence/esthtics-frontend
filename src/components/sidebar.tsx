@@ -35,7 +35,7 @@ export function Sidebar({ user }: { user: AdminUser }) {
   }
 
   return (
-    <aside className="flex w-[220px] shrink-0 flex-col bg-sidebar">
+    <aside className="sticky top-0 flex h-dvh w-[220px] shrink-0 flex-col overflow-y-auto bg-sidebar">
       <div className="px-6 py-6">
         <span className="text-[15px] font-semibold text-white">TEC Admin</span>
       </div>

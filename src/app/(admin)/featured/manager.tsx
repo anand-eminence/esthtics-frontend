@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useConfirm } from "@/components/confirm";
 import { PageHeader } from "@/components/page-header";
 import { Button, Field, Input, Select, Textarea } from "@/components/form";
 import {
@@ -33,6 +34,7 @@ type FormValues = typeof BLANK;
 
 export function FeaturedManager({ items }: { items: Featured[] }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -82,11 +84,16 @@ export function FeaturedManager({ items }: { items: Featured[] }) {
     }
   }
 
-  async function onDelete(id: string) {
-    if (!confirm("Delete this featured screen?")) return;
+  async function onDelete(item: Featured) {
+    const ok = await confirm({
+      title: "Delete this featured screen?",
+      message: `“${item.title}” on ${shortDate(item.quizDate)} will be removed. This can't be undone.`,
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
     try {
-      await apiSend(`/api/admin/featured/${id}`, "DELETE");
-      if (editingId === id) startNew();
+      await apiSend(`/api/admin/featured/${item.id}`, "DELETE");
+      if (editingId === item.id) startNew();
       router.refresh();
     } catch (err) {
       setMessage(toApiError(err).message);
@@ -140,7 +147,7 @@ export function FeaturedManager({ items }: { items: Featured[] }) {
                             Edit
                           </button>
                           <button
-                            onClick={() => onDelete(item.id)}
+                            onClick={() => onDelete(item)}
                             disabled={isSubmitting}
                             className="text-muted hover:text-bad-ink"
                           >

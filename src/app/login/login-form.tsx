@@ -8,28 +8,38 @@ import { api, toApiError } from "@/lib/client";
 
 type LoginValues = { email: string; password: string };
 
+// The API's own rule (zod 3's `.email()`), so an address it would reject is
+// caught here, on the field, before anything is sent.
+const EMAIL =
+  /^(?!\.)(?!.*\.\.)([A-Z0-9_'+\-.]*)[A-Z0-9_+-]@([A-Z0-9][A-Z0-9-]*\.)+[A-Z]{2,}$/i;
+
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/dashboard";
 
-  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({ defaultValues: { email: "", password: "" } });
 
   async function onSubmit(values: LoginValues) {
-    setError(null);
+    setMessage(null);
     try {
       await api.post("/api/admin/auth/login", values);
       router.replace(next);
       router.refresh();
     } catch (err) {
-      setError(toApiError(err).message);
+      const apiError = toApiError(err);
+      for (const [name, msg] of Object.entries(apiError.fieldErrors ?? {})) {
+        setError(name as keyof LoginValues, { type: "server", message: msg });
+      }
+      setMessage(apiError.message);
     }
   }
 
@@ -48,10 +58,9 @@ export function LoginForm() {
           invalid={Boolean(errors.email)}
           {...register("email", {
             required: "Enter your email address",
-            pattern: {
-              value: /^\S+@\S+\.\S+$/,
-              message: "That does not look like an email",
-            },
+            // Trimmed first, as the API does.
+            validate: (value) =>
+              EMAIL.test(value.trim()) || "Enter a valid email address",
           })}
         />
       </Field>
@@ -82,12 +91,12 @@ export function LoginForm() {
         </div>
       </Field>
 
-      {error ? (
+      {message ? (
         <p
           role="alert"
           className="rounded-md bg-bad-bg px-3 py-2 text-[13px] text-bad-ink"
         >
-          {error}
+          {message}
         </p>
       ) : null}
 

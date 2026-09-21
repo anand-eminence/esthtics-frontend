@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm, type UseFormSetError } from "react-hook-form";
+import { useConfirm } from "@/components/confirm";
 import { DayBadge } from "@/components/day-badge";
 import { Button, Field, Input, Select, Textarea } from "@/components/form";
 import { Notice, cn } from "@/components/ui";
@@ -108,6 +109,7 @@ export function QuestionForm({
   initialDay?: DayInfo | null;
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [message, setMessage] = useState<string | null>(null);
   const [day, setDay] = useState<DayInfo | null>(initialDay ?? null);
 
@@ -186,9 +188,12 @@ export function QuestionForm({
       (!question || !question.isBonus || question.quizDate !== values.quizDate);
     if (
       bonusGoesLive &&
-      !confirm(
-        `${shortDate(values.quizDate)} is live. Saving shows this bonus question to members straight away.`,
-      )
+      !(await confirm({
+        title: `${shortDate(values.quizDate)} is live`,
+        message: "Saving shows this bonus question to members straight away.",
+        confirmLabel: "Save",
+        tone: "primary",
+      }))
     ) {
       return;
     }
@@ -219,7 +224,12 @@ export function QuestionForm({
 
   async function onDelete() {
     if (!question) return;
-    if (!confirm("Delete this question? This can't be undone.")) return;
+    const ok = await confirm({
+      title: "Delete this question?",
+      message: "This can't be undone.",
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
     try {
       await apiSend(`/api/admin/questions/${question.id}`, "DELETE");
       router.push("/questions");

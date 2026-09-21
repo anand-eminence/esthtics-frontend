@@ -43,8 +43,23 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Focus ring, applied once rather than per component. */
-:where(a, button, input, select, textarea):focus-visible {
+/* Focus ring for links, buttons and tick boxes, applied once rather than per component. */
+:where(a, button, input[type="checkbox"], input[type="radio"]):focus-visible {
   outline: 2px solid var(--color-brand-500);
   outline-offset: 2px;
+}
+
+/*
+ * Fields show focus on their own border rather than a second ring outside it,
+ * so a field only ever has one outline — and it stays red while it has an error.
+ */
+:where(input:not([type="checkbox"], [type="radio"]), select, textarea):focus {
+  outline: none;
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 1px var(--color-brand-500);
+}
+
+:where(input, select, textarea)[aria-invalid="true"]:focus {
+  border-color: var(--color-bad-ink);
+  box-shadow: 0 0 0 1px var(--color-bad-ink);
 }

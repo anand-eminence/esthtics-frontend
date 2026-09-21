@@ -2,8 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useConfirm } from "@/components/confirm";
 import { cn } from "@/components/ui";
 import { apiSend, toApiError } from "@/lib/client";
+import { shortDate } from "@/lib/format";
 import type { DayState } from "@/lib/types";
 
 export function DayActions({
@@ -18,6 +20,7 @@ export function DayActions({
   isPast: boolean;
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,9 +31,12 @@ export function DayActions({
   async function setLive(live: boolean) {
     if (
       !live &&
-      !confirm(
-        `Unpublish ${date}? Members will see "No quiz today" until it is published again.`,
-      )
+      !(await confirm({
+        title: `Unpublish ${shortDate(date)}?`,
+        message:
+          'Members will see "No quiz today" until it is published again.',
+        confirmLabel: "Unpublish",
+      }))
     ) {
       return;
     }

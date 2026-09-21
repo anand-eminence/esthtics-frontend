@@ -51,6 +51,7 @@ export function Input({
   return (
     <input
       className={cn(CONTROL, invalid && "border-bad-ink", className)}
+      aria-invalid={invalid || undefined}
       {...props}
     />
   );
@@ -69,6 +70,7 @@ export function Textarea({
         invalid && "border-bad-ink",
         className,
       )}
+      aria-invalid={invalid || undefined}
       {...props}
     />
   );
@@ -104,6 +106,7 @@ export function Select({
         backgroundSize: "16px 16px",
         ...style,
       }}
+      aria-invalid={invalid || undefined}
       {...props}
     >
       {children}
@@ -116,7 +119,7 @@ export function Button({
   className,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: "primary" | "secondary" | "ghost" | "danger";
 }) {
   const variants = {
     primary:
@@ -124,6 +127,7 @@ export function Button({
     secondary:
       "border border-line bg-surface text-ink hover:bg-page disabled:text-muted",
     ghost: "text-ink-soft hover:bg-page",
+    danger: "bg-bad-ink text-white hover:bg-bad-ink/90 disabled:bg-bad-ink/50",
   } as const;
 
   return (
