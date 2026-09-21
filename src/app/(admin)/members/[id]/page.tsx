@@ -15,20 +15,34 @@ import { apiGet } from "@/lib/api";
 import { longDate, shortDate, slotLabel } from "@/lib/format";
 import type { MemberDetail } from "@/lib/types";
 
+function backToList(from: string | string[] | undefined) {
+  const given = new URLSearchParams(Array.isArray(from) ? from[0] : from);
+  const kept = new URLSearchParams();
+  for (const key of ["search", "sort", "activity", "page"]) {
+    const value = given.get(key);
+    if (value) kept.set(key, value);
+  }
+  const query = kept.toString();
+  return { href: `/members${query ? `?${query}` : ""}`, label: "Members" };
+}
+
 // A8 · Member detail. One member's full record.
 export default async function MemberDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string | string[] }>;
 }) {
-  const { id } = await params;
+  const [{ id }, { from }] = await Promise.all([params, searchParams]);
+  const back = backToList(from);
   const result = await apiGet<MemberDetail>(`/api/admin/members/${id}`);
 
   if (!result.ok) {
     if (result.status === 404) notFound();
     return (
       <>
-        <PageHeader title="Member" />
+        <PageHeader title="Member" back={back} />
         <div className="p-8">
           <ApiErrorState error={result.error} status={result.status} />
         </div>
@@ -40,7 +54,11 @@ export default async function MemberDetailPage({
 
   return (
     <>
-      <PageHeader title={member.name || member.circleUid} meta={member.email} />
+      <PageHeader
+        title={member.name || member.circleUid}
+        meta={member.email}
+        back={back}
+      />
 
       <div className="space-y-6 p-8">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

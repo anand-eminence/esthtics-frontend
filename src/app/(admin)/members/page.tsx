@@ -40,6 +40,15 @@ export default async function MembersPage({
   };
   const page = Number(params.page) || 1;
 
+  // Handed to each member's screen, so its Back link returns to this exact view.
+  const listQuery = queryString({
+    search: params.search,
+    sort: params.sort,
+    activity: params.activity,
+    page: params.page,
+  }).slice(1);
+  const from = listQuery ? `?from=${encodeURIComponent(listQuery)}` : "";
+
   const result = await apiGet<Response>(
     `/api/admin/members${queryString({ ...filters, page, perPage: PER_PAGE })}`,
   );
@@ -136,7 +145,7 @@ export default async function MembersPage({
                     </Td>
                     <Td align="right">
                       <Link
-                        href={`/members/${m.id}`}
+                        href={`/members/${m.id}${from}`}
                         className="text-muted hover:text-brand-600"
                       >
                         View
