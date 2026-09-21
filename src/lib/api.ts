@@ -60,3 +60,29 @@ export function queryString(
   const out = search.toString();
   return out ? `?${out}` : "";
 }
+
+const QUIZ_TIMEZONE_FALLBACK = "America/New_York";
+
+function dateIn(timeZone: string) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+/**
+ * Today (YYYY-MM-DD) in the quiz's timezone from Settings — the quiz's day,
+ * not the admin's — so the earliest date anything can still be scheduled for.
+ */
+export async function quizToday(): Promise<string> {
+  const res = await apiGet<{ settings: { timezone: string } }>(
+    "/api/admin/settings",
+  );
+  try {
+    return dateIn((res.ok && res.data.settings.timezone) || QUIZ_TIMEZONE_FALLBACK);
+  } catch {
+    return dateIn(QUIZ_TIMEZONE_FALLBACK);
+  }
+}

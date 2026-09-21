@@ -32,7 +32,14 @@ const BLANK = {
 
 type FormValues = typeof BLANK;
 
-export function FeaturedManager({ items }: { items: Featured[] }) {
+export function FeaturedManager({
+  items,
+  today,
+}: {
+  items: Featured[];
+  /** Today in the quiz's timezone — the earliest date that can be picked. */
+  today: string;
+}) {
   const router = useRouter();
   const confirm = useConfirm();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -187,8 +194,16 @@ export function FeaturedManager({ items }: { items: Featured[] }) {
                 id="f-date"
                 type="date"
                 required
+                min={today}
                 invalid={Boolean(errors.quizDate)}
-                {...register("quizDate", { required: "Pick a date" })}
+                {...register("quizDate", {
+                  required: "Pick a date",
+                  // One already on a past day may keep its date when edited.
+                  validate: (value) =>
+                    value >= today ||
+                    value === items.find((i) => i.id === editingId)?.quizDate ||
+                    "Pick today or a later date",
+                })}
               />
             </Field>
 
